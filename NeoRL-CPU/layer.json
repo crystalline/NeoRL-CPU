@@ -1,0 +1,22 @@
+{
+	"_receptiveRadius":		4,
+	"_recurrentRadius":		4,
+	"_lateralRadius":		4,
+	"_predictiveRadius":	4,
+	"_feedBackRadius":		4,
+	"_learnFeedForward":	0.01,
+	"_learnRecurrent":		0.003,
+	"_learnLateral":		0.1,
+	"_learnFeedBack":		0.01,
+	"_learnPrediction":		0.01,
+	"_sdrIter":				30,
+	"_sdrLeak":				0.1,
+	"_sdrLambda":			0.95,
+	"_sdrHiddenDecay":		0.01,
+	"_sdrWeightDecay":		0.0,
+	"_sdrMaxWeightDelta":	0.5,
+	"_sdrSparsity":			0.1,
+	"_sdrLearnThreshold":	0.01,
+	"_sdrBaselineDecay":	0.001,
+	"_sdrSensitivity":		1.0
+}

@@ -5,6 +5,7 @@
 #include <neo/PredictiveHierarchy.h>
 
 #include "../libs/argparse.hpp"
+#include "../libs/json.hpp"
 
 #include <time.h>
 #include <iostream>
@@ -16,6 +17,8 @@
 #include <unordered_set>
 
 #include <algorithm>
+
+using json = nlohmann::json;
 
 class VectorCodec {
 private:
@@ -142,6 +145,39 @@ void sample(neo::PredictiveHierarchy& ph, std::mt19937& generator,
     std::cout << "\"" << std::endl;
 }
 
+#define QUOTE(name) #name
+#define STR(macro) QUOTE(macro)
+
+#define LOADPROP(prop, jsonobj, cppobj) if (jsonobj.find(STR(prop)) != jsonobj.end()) { cppobj.prop = jsonobj[STR(prop)]; };
+
+void jsonConfLayer(neo::PredictiveHierarchy::LayerDesc& desc, json& conf) {
+	if (conf.is_object()) {
+		LOADPROP(_width, conf, desc)
+		LOADPROP(_height, conf, desc)
+		LOADPROP(_learnFeedForward, conf, desc)
+		LOADPROP(_receptiveRadius, conf, desc)
+		LOADPROP(_recurrentRadius, conf, desc)
+		LOADPROP(_lateralRadius, conf, desc)
+		LOADPROP(_predictiveRadius, conf, desc)
+		LOADPROP(_feedBackRadius, conf, desc)
+		LOADPROP(_sdrIter, conf, desc)
+		LOADPROP(_learnFeedForward, conf, desc)
+		LOADPROP(_learnRecurrent, conf, desc)
+		LOADPROP(_learnLateral, conf, desc)
+		LOADPROP(_learnFeedBack, conf, desc)
+		LOADPROP(_learnPrediction, conf, desc)
+		LOADPROP(_sdrLeak, conf, desc)
+		LOADPROP(_sdrLambda, conf, desc)
+		LOADPROP(_sdrHiddenDecay, conf, desc)
+		LOADPROP(_sdrWeightDecay, conf, desc)
+		LOADPROP(_sdrMaxWeightDelta, conf, desc)
+		LOADPROP(_sdrSparsity, conf, desc)
+		LOADPROP(_sdrLearnThreshold, conf, desc)
+		LOADPROP(_sdrBaselineDecay, conf, desc)
+		LOADPROP(_sdrSensitivity, conf, desc)
+	}
+}
+
 int main(int argc, const char** argv) {
 	
     // Load the command line config
@@ -157,6 +193,7 @@ int main(int argc, const char** argv) {
     parser.addArgument("--ifbradius", 1);
     parser.addArgument("--lw", 1);
     parser.addArgument("--lh", 1);
+    parser.addArgument("--lconfig", 1);
     parser.addArgument("--ssize", 1);
     parser.addArgument("--sseednoise", 1);
     parser.addArgument("--sprednoise", 1);
@@ -193,11 +230,20 @@ int main(int argc, const char** argv) {
 	int layerH = std::atoi(parser.retrieve("lh", "16").c_str());
 	int inFeedBackRadius = std::atoi(parser.retrieve("ifbradius", "16").c_str());
 	
+	bool configureLayers = false;
+    json jLayerConf;
+    if (parser.count("lconfig") == 1) {		
+		std::ifstream confFile(parser.retrieve<std::string>("lconfig"));
+		jLayerConf << confFile;
+		configureLayers = true;
+	}
+	
 	std::vector<neo::PredictiveHierarchy::LayerDesc> layerDescs(nLayers);
 	
 	for (int i = 0; i < nLayers; i++) {
 		layerDescs[i]._width = layerW;
 		layerDescs[i]._height = layerH;
+		if (configureLayers) jsonConfLayer(layerDescs[i], jLayerConf);
 	}
 	
 	neo::PredictiveHierarchy ph;
@@ -215,6 +261,11 @@ int main(int argc, const char** argv) {
     std::cout << "Corpus: " << corpusPath << " size: " << test.length() << " alphabet size: " << textcodec.nSymbols << std::endl;
     std::cout << "Model: nLayers: " << nLayers << " layerW: " << layerW << " layerH: " << layerH << " inFeedbackRadius: " << inFeedBackRadius 
 			  << " input: " << inputsRoot << "x" << inputsRoot << std::endl;
+	if (configureLayers) {
+		std::cout << "Loaded layer config: " << std::endl;
+		std::cout << std::setw(4) << jLayerConf << std::endl;
+	}
+
 	std::cout << "Training: epochs: " << numEpochs << std::endl;
 	std::cout << "Sampling: samples: " << numSamples << " size: " << sampleSize << " seed noise: " << sampleSeedNoise << " pred noise " << samplePredNoise << std::endl;    
     std::cout << "--[ Start training ]--" << std::endl;
